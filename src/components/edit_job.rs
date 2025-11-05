@@ -257,11 +257,17 @@ impl Component for EditJob<'_> {
             .padding(Padding::uniform(1))
             .title("Edit Job");
         let inner = root.inner(area);
+
+        let split_areas =
+            Layout::vertical([Constraint::Min(3), Constraint::Length(3)]).split(inner);
+        let content_area = split_areas[0];
+        let confirm_area = split_areas[1];
+
         frame.render_widget(root, area);
 
         let layout_horizontal =
             Layout::horizontal([Constraint::Percentage(50), Constraint::Percentage(50)])
-                .split(inner);
+                .split(content_area);
 
         let layout_vertical = Layout::vertical([
             Constraint::Length(3),
@@ -354,6 +360,16 @@ impl Component for EditJob<'_> {
         let notes_chunk = layout[9];
         frame.render_widget(self.text_fields.get(&Field::Notes).unwrap(), notes_chunk);
 
+        // Confirm area
+        let confirm_button = Paragraph::new(" Save Changes ")
+            .block(
+                Block::bordered()
+                    .padding(Padding::horizontal(2))
+                    .title("Confirm")
+                    .border_style(Style::default().fg(Color::Green)),
+            )
+            .centered();
+        frame.render_widget(confirm_button, confirm_area);
         Ok(())
     }
 }
