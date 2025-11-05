@@ -11,13 +11,12 @@ mod components;
 mod config;
 mod database;
 mod errors;
-mod logging;
 mod tui;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     crate::errors::init()?;
-    crate::logging::init()?;
+    // crate::logging::init()?;
 
     let args = Cli::parse();
     let mut app = App::new(args.tick_rate, args.frame_rate)?;
