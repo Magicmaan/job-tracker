@@ -31,6 +31,7 @@ pub struct JobList {
     jobs: Vec<JobApplication>,
     state: JobListState,
     area: Option<Rect>,
+    notes_popup_visible: bool,
 }
 
 impl JobList {
@@ -41,6 +42,7 @@ impl JobList {
             jobs: Vec::new(),
             state: JobListState::default(),
             area: None,
+            notes_popup_visible: false,
         }
     }
     pub fn layout(&self, area: Rect) -> Layout {
@@ -83,6 +85,9 @@ impl Component for JobList {
     fn mode(&self) -> Mode {
         Mode::Home
     }
+    fn id(&self) -> String {
+        "Job List".into()
+    }
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         if self.jobs.len() == 0 {
             self.command_tx
@@ -99,6 +104,10 @@ impl Component for JobList {
             }
             Action::JobResults(res) => {
                 self.jobs = res;
+            }
+            Action::NotesPopupData(str) => {
+                self.notes_popup_visible = false;
+                self.jobs.get_mut(0).unwrap().notes = Some(str.into());
             }
 
             _ => {}
@@ -195,6 +204,16 @@ impl Component for JobList {
                 // Send an action to edit the selected job
                 if let Some(tx) = &self.command_tx {
                     tx.send(Action::ChangeMode(Mode::EditJob))?;
+                }
+            }
+            KeyCode::Esc => {
+                // Send an action to go back to home mode
+                if let Some(tx) = &self.command_tx {
+                    tx.send(Action::ChangeMode(Mode::Popup("notes_popup")))?;
+
+                    tx.send(Action::DispatchNotesPopupData(
+                        "This is a test note popup.".into(),
+                    ))?;
                 }
             }
             KeyCode::Up => {

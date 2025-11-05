@@ -1,13 +1,21 @@
 use color_eyre::Result;
 use crossterm::event::KeyEvent;
-use ratatui::prelude::Rect;
+use ratatui::{
+    buffer::Buffer,
+    prelude::Rect,
+    style::{Color, Style},
+    widgets::Block,
+};
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
 use tracing::{debug, info};
 
 use crate::{
     action::Action,
-    components::{component::Component, edit_job::EditJob, job_list::JobList, search::Home},
+    components::{
+        component::Component, edit_job::EditJob, job_list::JobList, notes_popup::NotesPopup,
+        search::Home,
+    },
     config::Config,
     database::{db::Database, schema::JobApplication},
     tui::{Event, Tui},
@@ -26,6 +34,8 @@ pub struct App {
     action_tx: mpsc::UnboundedSender<Action>,
     action_rx: mpsc::UnboundedReceiver<Action>,
     database: Database,
+    last_buffer: Buffer,
+    last_mode: Mode,
 }
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -33,6 +43,7 @@ pub enum Mode {
     #[default]
     Home,
     EditJob,
+    Popup(&'static str),
 }
 
 impl App {
@@ -44,6 +55,7 @@ impl App {
             Box::new(Home::new()),
             Box::new(JobList::new()),
             Box::new(EditJob::new()),
+            Box::new(NotesPopup::new()),
         ];
         let mut current_mode_components = Vec::new();
         for (idx, component) in components.iter().enumerate() {
@@ -64,6 +76,8 @@ impl App {
             action_tx,
             action_rx,
             database: Database::default(),
+            last_buffer: Buffer::empty(Rect::new(0, 0, 0, 0)),
+            last_mode: Mode::Home,
         })
     }
 
@@ -181,6 +195,7 @@ impl App {
                 Action::Render => self.render(tui)?,
                 Action::DispatchJobSearch => self.handle_job_search()?,
                 Action::ChangeMode(new_mode) => {
+                    self.last_mode = self.mode;
                     self.mode = new_mode;
                     self.current_mode_components.clear();
                     for (idx, component) in self.components.iter().enumerate() {
@@ -188,6 +203,15 @@ impl App {
                             self.current_mode_components.push(idx);
                         }
                     }
+                }
+                Action::DispatchNotesPopupData(notes) => {
+                    // self.current_mode_components.clear();
+                    // self.mode = Mode::Popup;
+                    // for (idx, component) in self.components.iter_mut().enumerate() {
+                    //     if component.mode() == Mode::Popup {
+                    //         self.current_mode_components.push(idx);
+                    //     }
+                    // }
                 }
                 _ => {}
             }
@@ -209,13 +233,27 @@ impl App {
 
     fn render(&mut self, tui: &mut Tui) -> Result<()> {
         tui.draw(|frame| {
-            for c in self.current_mode_components.iter_mut() {
-                let component = self.components.get_mut(*c).unwrap();
+            if let Mode::Popup(component_id) = self.mode {
+                let id = self.current_mode_components[0];
+
+                let component = self.components.get_mut(id).unwrap();
+
+                frame.buffer_mut().merge(&self.last_buffer);
                 if let Err(err) = component.draw(frame, frame.area()) {
                     let _ = self
                         .action_tx
                         .send(Action::Error(format!("Failed to draw: {:?}", err)));
                 }
+            } else {
+                for c in self.current_mode_components.iter_mut() {
+                    let component = self.components.get_mut(*c).unwrap();
+                    if let Err(err) = component.draw(frame, frame.area()) {
+                        let _ = self
+                            .action_tx
+                            .send(Action::Error(format!("Failed to draw: {:?}", err)));
+                    }
+                }
+                self.last_buffer = frame.buffer_mut().clone();
             }
         })?;
         Ok(())

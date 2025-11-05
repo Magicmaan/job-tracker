@@ -17,15 +17,16 @@ use crate::{
 pub enum FocusedField {
     #[default]
     None = -1,
-    Notes = 0,
-    ApplicationLink = 1,
-    CompanyWebsite = 2,
-    CV = 3,
-    CoverLetter = 4,
+    Status = 0,
+    Notes = 1,
+    ApplicationLink = 2,
+    CompanyWebsite = 3,
+    CV = 4,
+    CoverLetter = 5,
 }
 impl FocusedField {
     pub fn len() -> i8 {
-        6
+        7
     }
 }
 impl Into<i8> for FocusedField {
@@ -36,11 +37,12 @@ impl Into<i8> for FocusedField {
 impl From<i8> for FocusedField {
     fn from(value: i8) -> Self {
         match value {
-            0 => FocusedField::Notes,
-            1 => FocusedField::ApplicationLink,
-            2 => FocusedField::CompanyWebsite,
-            3 => FocusedField::CV,
-            4 => FocusedField::CoverLetter,
+            0 => FocusedField::Status,
+            1 => FocusedField::Notes,
+            2 => FocusedField::ApplicationLink,
+            3 => FocusedField::CompanyWebsite,
+            4 => FocusedField::CV,
+            5 => FocusedField::CoverLetter,
             _ => FocusedField::None,
         }
     }

@@ -13,6 +13,9 @@ use crate::{action::Action, app::Mode, config::Config, tui::Event};
 /// Implementors of this trait can be registered with the main application loop and will be able to
 /// receive events, update state, and be rendered on the screen.
 pub trait Component {
+    fn id(&self) -> String {
+        String::from("component")
+    }
     fn mode(&self) -> Mode {
         Mode::Home
     }

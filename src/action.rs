@@ -24,4 +24,9 @@ pub enum Action {
     UnFocusField,
     ChangeMode(crate::app::Mode),
     PopulateEditJobForm(JobApplication),
+
+    EnterPopup(&'static str),
+    ExitPopup,
+    DispatchNotesPopupData(&'static str),
+    NotesPopupData(&'static str),
 }
